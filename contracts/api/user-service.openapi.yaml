@@ -1,0 +1,830 @@
+openapi: 3.1.0
+info:
+  title: BizBrain User Service
+  description: Identity and access authority for the BizBrain multi-tenant small-business
+    finance platform. Manages users, businesses, memberships, roles, sessions, and
+    RS256 token issuance.
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      tags:
+      - Health
+      summary: Health Check
+      operationId: health_check_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Health Check Health Get
+  /.well-known/jwks.json:
+    get:
+      tags:
+      - JWKS
+      summary: Jwks
+      description: 'Public JWKS endpoint for asymmetric signature verification.
+
+        External and peer microservices fetch public keys from here to verify RS256
+        JWTs locally.'
+      operationId: jwks__well_known_jwks_json_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Jwks  Well Known Jwks Json Get
+  /api/v1/auth/register:
+    post:
+      tags:
+      - Auth
+      summary: Register
+      operationId: register_api_v1_auth_register_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/login:
+    post:
+      tags:
+      - Auth
+      summary: Login
+      operationId: login_api_v1_auth_login_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/refresh:
+    post:
+      tags:
+      - Auth
+      summary: Refresh
+      operationId: refresh_api_v1_auth_refresh_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/logout:
+    post:
+      tags:
+      - Auth
+      summary: Logout
+      operationId: logout_api_v1_auth_logout_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/logout-all:
+    post:
+      tags:
+      - Auth
+      summary: Logout All
+      operationId: logout_all_api_v1_auth_logout_all_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/v1/auth/verify-email:
+    post:
+      tags:
+      - Auth
+      summary: Verify Email
+      operationId: verify_email_api_v1_auth_verify_email_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/password-reset/request:
+    post:
+      tags:
+      - Auth
+      summary: Password Reset Request
+      operationId: password_reset_request_api_v1_auth_password_reset_request_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/password-reset/confirm:
+    post:
+      tags:
+      - Auth
+      summary: Password Reset Confirm
+      operationId: password_reset_confirm_api_v1_auth_password_reset_confirm_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/users/me:
+    get:
+      tags:
+      - Auth
+      summary: Get Me
+      operationId: get_me_api_v1_users_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+    put:
+      tags:
+      - Auth
+      summary: Update Me
+      operationId: update_me_api_v1_users_me_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMeRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/businesses:
+    post:
+      tags:
+      - Businesses
+      summary: Create Business
+      operationId: create_business_api_v1_businesses_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessCreateRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - Businesses
+      summary: List Businesses
+      operationId: list_businesses_api_v1_businesses_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 25
+          title: Limit
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/businesses/{business_id}:
+    get:
+      tags:
+      - Businesses
+      summary: Get Business
+      operationId: get_business_api_v1_businesses__business_id__get
+      parameters:
+      - name: business_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Business Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - Businesses
+      summary: Update Business
+      operationId: update_business_api_v1_businesses__business_id__patch
+      parameters:
+      - name: business_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Business Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessUpdateRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Businesses
+      summary: Delete Business
+      operationId: delete_business_api_v1_businesses__business_id__delete
+      parameters:
+      - name: business_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Business Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/businesses/{business_id}/members:
+    get:
+      tags:
+      - Businesses
+      summary: List Members
+      operationId: list_members_api_v1_businesses__business_id__members_get
+      parameters:
+      - name: business_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Business Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 25
+          title: Limit
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Businesses
+      summary: Add Member
+      operationId: add_member_api_v1_businesses__business_id__members_post
+      parameters:
+      - name: business_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Business Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMemberRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/businesses/{business_id}/members/{target_user_id}:
+    patch:
+      tags:
+      - Businesses
+      summary: Update Member
+      operationId: update_member_api_v1_businesses__business_id__members__target_user_id__patch
+      parameters:
+      - name: business_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Business Id
+      - name: target_user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Target User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMemberRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /internal/v1/service-token:
+    post:
+      tags:
+      - Internal
+      summary: Issue Service Token
+      operationId: issue_service_token_internal_v1_service_token_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceTokenRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /internal/v1/authz/check:
+    post:
+      tags:
+      - Internal
+      summary: Authz Check
+      description: Check if a user has a given permission in a business (reads live
+        DB state).
+      operationId: authz_check_internal_v1_authz_check_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthzCheckRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /internal/v1/businesses/{business_id}:
+    get:
+      tags:
+      - Internal
+      summary: Internal Get Business
+      description: Fetch a business record for inter-service use (requires service
+        token).
+      operationId: internal_get_business_internal_v1_businesses__business_id__get
+      parameters:
+      - name: business_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Business Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    AddMemberRequest:
+      properties:
+        user_id:
+          type: string
+          title: User Id
+          description: UUID of the user to add
+        role:
+          type: string
+          title: Role
+          description: OWNER | ADMIN | EMPLOYEE
+      type: object
+      required:
+      - user_id
+      - role
+      title: AddMemberRequest
+    AuthzCheckRequest:
+      properties:
+        user_id:
+          type: string
+          title: User Id
+        business_id:
+          type: string
+          title: Business Id
+        permission:
+          type: string
+          title: Permission
+      type: object
+      required:
+      - user_id
+      - business_id
+      - permission
+      title: AuthzCheckRequest
+    BusinessCreateRequest:
+      properties:
+        business_name:
+          type: string
+          maxLength: 150
+          minLength: 1
+          title: Business Name
+        base_currency:
+          type: string
+          maxLength: 3
+          minLength: 3
+          title: Base Currency
+        timezone:
+          type: string
+          maxLength: 50
+          minLength: 1
+          title: Timezone
+      type: object
+      required:
+      - business_name
+      - base_currency
+      - timezone
+      title: BusinessCreateRequest
+    BusinessUpdateRequest:
+      properties:
+        business_name:
+          anyOf:
+          - type: string
+            maxLength: 150
+            minLength: 1
+          - type: 'null'
+          title: Business Name
+        timezone:
+          anyOf:
+          - type: string
+            maxLength: 50
+            minLength: 1
+          - type: 'null'
+          title: Timezone
+      type: object
+      title: BusinessUpdateRequest
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    LoginRequest:
+      properties:
+        email:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Email
+        password:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Password
+      type: object
+      required:
+      - email
+      - password
+      title: LoginRequest
+    LogoutRequest:
+      properties:
+        refresh_token:
+          type: string
+          minLength: 1
+          title: Refresh Token
+      type: object
+      required:
+      - refresh_token
+      title: LogoutRequest
+    PasswordResetConfirmIn:
+      properties:
+        token:
+          type: string
+          minLength: 1
+          title: Token
+        new_password:
+          type: string
+          maxLength: 128
+          minLength: 12
+          title: New Password
+      type: object
+      required:
+      - token
+      - new_password
+      title: PasswordResetConfirmIn
+    PasswordResetRequestIn:
+      properties:
+        email:
+          type: string
+          maxLength: 255
+          minLength: 3
+          title: Email
+      type: object
+      required:
+      - email
+      title: PasswordResetRequestIn
+    RefreshRequest:
+      properties:
+        refresh_token:
+          type: string
+          minLength: 1
+          title: Refresh Token
+      type: object
+      required:
+      - refresh_token
+      title: RefreshRequest
+    RegisterRequest:
+      properties:
+        full_name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Full Name
+        email:
+          type: string
+          maxLength: 255
+          minLength: 3
+          title: Email
+        password:
+          type: string
+          maxLength: 128
+          minLength: 12
+          title: Password
+      type: object
+      required:
+      - full_name
+      - email
+      - password
+      title: RegisterRequest
+    ServiceTokenRequest:
+      properties:
+        client_id:
+          type: string
+          title: Client Id
+        client_secret:
+          type: string
+          title: Client Secret
+      type: object
+      required:
+      - client_id
+      - client_secret
+      title: ServiceTokenRequest
+    UpdateMeRequest:
+      properties:
+        full_name:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Full Name
+      type: object
+      title: UpdateMeRequest
+    UpdateMemberRequest:
+      properties:
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Role
+          description: New role for the member
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+      type: object
+      title: UpdateMemberRequest
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    VerifyEmailRequest:
+      properties:
+        token:
+          type: string
+          minLength: 1
+          title: Token
+      type: object
+      required:
+      - token
+      title: VerifyEmailRequest

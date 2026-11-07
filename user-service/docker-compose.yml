@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  user-db:
+    image: postgres:16-alpine
+    container_name: bizbrain_user_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: user_db
+      DB_MIGRATION_USER: bizbrain_migrator
+      DB_MIGRATION_PASSWORD: migrator_secure_pass_123
+      DB_APP_USER: bizbrain_app
+      DB_APP_PASSWORD: app_runtime_secure_pass_123
+    ports:
+      - "5432:5432"
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d user_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bizbrain_user_service
+    restart: unless-stopped
+    depends_on:
+      user-db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - DATABASE_URL=postgresql+asyncpg://bizbrain_app:app_runtime_secure_pass_123@user-db:5432/user_db
+      - MIGRATION_DATABASE_URL=postgresql+asyncpg://bizbrain_migrator:migrator_secure_pass_123@user-db:5432/user_db
+      - JWT_KEY_ID=bizbrain-user-key-1
+      - JWT_ISSUER=bizbrain-user-service
+      - JWT_AUDIENCE=bizbrain-services
+    volumes:
+      - .:/app
+
+volumes:
+  user_db_data:
