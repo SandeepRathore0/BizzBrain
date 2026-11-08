@@ -1,0 +1,101 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bizbrain-invoice-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_dev_password
+      POSTGRES_DB: invoice_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker/initdb:/docker-entrypoint-initdb.d
+      - pgdata_invoice:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d invoice_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  invoice-service:
+    build: .
+    container_name: bizbrain-invoice-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: development
+      DEBUG: "true"
+      DATABASE_URL: postgresql+asyncpg://invoice_app:invoice_app_pass@postgres:5432/invoice_db
+      MIGRATION_DATABASE_URL: postgresql+psycopg://invoice_owner:invoice_owner_pass@postgres:5432/invoice_db
+      USER_SERVICE_URL: http://user-service-stub:8001
+      FINANCIAL_DATA_SERVICE_URL: http://financial-service-stub:8002
+      SERVICE_CLIENT_ID: invoice-service
+      SERVICE_CLIENT_SECRET: dev-invoice-secret
+    ports:
+      - "8000:8000"
+
+  user-service-stub:
+    image: python:3.12-slim
+    container_name: bizbrain-user-service-stub
+    command: >
+      python -c "
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+      import json
+      class H(BaseHTTPRequestHandler):
+          def do_GET(self):
+              if self.path == '/.well-known/jwks.json':
+                  self.send_response(200)
+                  self.send_header('Content-Type', 'application/json')
+                  self.end_headers()
+                  self.wfile.write(b'{\"keys\":[]}')
+              elif self.path.startswith('/internal/v1/businesses/'):
+                  self.send_response(200)
+                  self.send_header('Content-Type', 'application/json')
+                  self.end_headers()
+                  self.wfile.write(json.dumps({'success': True, 'data': {'base_currency': 'USD', 'timezone': 'UTC', 'is_active': True}, 'request_id': 'stub'}).encode())
+              else:
+                  self.send_response(404); self.end_headers()
+          def do_POST(self):
+              self.send_response(200)
+              self.send_header('Content-Type', 'application/json')
+              self.end_headers()
+              self.wfile.write(json.dumps({'success': True, 'data': {'authorized': True}, 'request_id': 'stub'}).encode())
+      HTTPServer(('0.0.0.0', 8001), H).serve_forever()
+      "
+    ports:
+      - "8001:8001"
+
+  financial-service-stub:
+    image: python:3.12-slim
+    container_name: bizbrain-financial-service-stub
+    command: >
+      python -c "
+      from http.server import HTTPServer, BaseHTTPRequestHandler
+      import json
+      class H(BaseHTTPRequestHandler):
+          def do_GET(self):
+              self.send_response(200)
+              self.send_header('Content-Type', 'application/json')
+              self.end_headers()
+              self.wfile.write(json.dumps({
+                  'success': True,
+                  'data': {
+                      'customer_id': '00000000-0000-0000-0000-000000000001',
+                      'name': 'Acme Corp',
+                      'email': 'acme@example.com',
+                      'billing_address': {'street': '123 Market St'},
+                      'tax_id': 'TAX-1234',
+                      'is_active': True
+                  },
+                  'request_id': 'stub'
+              }).encode())
+      HTTPServer(('0.0.0.0', 8002), H).serve_forever()
+      "
+    ports:
+      - "8002:8002"
+
+volumes:
+  pgdata_invoice:
