@@ -1,0 +1,484 @@
+openapi: 3.0.3
+info:
+  title: BizBrain Financial Data Service
+  description: Microservice managing customers, suppliers, expense categories, expenses, receipts, and financial summaries.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8002
+    description: Local development server
+
+paths:
+  /health:
+    get:
+      summary: Liveness check
+      tags: [Health]
+      responses:
+        "200":
+          description: Service is healthy
+
+  /ready:
+    get:
+      summary: Readiness check
+      tags: [Health]
+      responses:
+        "200":
+          description: Service is ready to receive traffic
+
+  /api/v1/customers:
+    post:
+      summary: Create a customer
+      tags: [Customers]
+      parameters:
+        - in: header
+          name: X-Business-ID
+          schema:
+            type: string
+            format: uuid
+          required: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerCreate'
+      responses:
+        "201":
+          description: Customer created
+        "409":
+          description: Duplicate customer name conflict
+
+    get:
+      summary: List customers
+      tags: [Customers]
+      parameters:
+        - in: header
+          name: X-Business-ID
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: is_active
+          schema:
+            type: boolean
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 25
+            maximum: 100
+        - in: query
+          name: cursor
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cursor-paginated customer list
+
+  /api/v1/customers/{customer_id}:
+    get:
+      summary: Get customer by ID
+      tags: [Customers]
+      parameters:
+        - in: path
+          name: customer_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Customer details
+        "404":
+          description: Customer not found
+
+    put:
+      summary: Update customer
+      tags: [Customers]
+      parameters:
+        - in: path
+          name: customer_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerUpdate'
+      responses:
+        "200":
+          description: Customer updated
+        "403":
+          description: Employees forbidden from editing customers
+
+    delete:
+      summary: Soft deactivate customer
+      tags: [Customers]
+      parameters:
+        - in: path
+          name: customer_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Customer deactivated (is_active=false)
+        "403":
+          description: Employees forbidden from deactivating customers
+
+  /api/v1/suppliers:
+    post:
+      summary: Create a supplier
+      tags: [Suppliers]
+      responses:
+        "201":
+          description: Supplier created
+
+    get:
+      summary: List suppliers
+      tags: [Suppliers]
+      responses:
+        "200":
+          description: Cursor-paginated supplier list
+
+  /api/v1/suppliers/{supplier_id}:
+    get:
+      summary: Get supplier by ID
+      tags: [Suppliers]
+      responses:
+        "200":
+          description: Supplier details
+    put:
+      summary: Update supplier
+      tags: [Suppliers]
+      responses:
+        "200":
+          description: Supplier updated
+    delete:
+      summary: Soft deactivate supplier
+      tags: [Suppliers]
+      responses:
+        "200":
+          description: Supplier deactivated
+
+  /api/v1/expense-categories:
+    post:
+      summary: Create expense category
+      tags: [Expense Categories]
+      responses:
+        "201":
+          description: Category created
+        "409":
+          description: Duplicate category name conflict
+    get:
+      summary: List expense categories (with lazy default seeding)
+      tags: [Expense Categories]
+      responses:
+        "200":
+          description: List of categories
+
+  /api/v1/expense-categories/{category_id}:
+    patch:
+      summary: Rename or deactivate expense category
+      tags: [Expense Categories]
+      responses:
+        "200":
+          description: Category updated
+
+  /api/v1/expenses:
+    post:
+      summary: Record an expense
+      tags: [Expenses]
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseCreate'
+      responses:
+        "201":
+          description: Expense recorded
+        "200":
+          description: Idempotent replay of previously completed request
+          headers:
+            Idempotent-Replayed:
+              schema:
+                type: string
+                example: "true"
+        "400":
+          description: Missing or invalid Idempotency-Key header
+        "422":
+          description: Idempotency key reused with different payload, invalid currency, or precision error
+
+    get:
+      summary: List expenses
+      tags: [Expenses]
+      parameters:
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: category_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: supplier_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [POSTED, VOID]
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 25
+            maximum: 100
+        - in: query
+          name: cursor
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cursor-paginated expenses list
+
+  /api/v1/expenses/{expense_id}:
+    get:
+      summary: Get expense by ID
+      tags: [Expenses]
+      responses:
+        "200":
+          description: Expense details
+        "404":
+          description: Expense not found
+
+    patch:
+      summary: Edit expense (description and category_id only)
+      tags: [Expenses]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpensePatch'
+      responses:
+        "200":
+          description: Expense updated
+        "409":
+          description: Cannot edit a voided expense
+        "422":
+          description: Prohibited field edited (only description and category_id are allowed)
+
+  /api/v1/expenses/{expense_id}/void:
+    post:
+      summary: Void an expense
+      tags: [Expenses]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseVoidRequest'
+      responses:
+        "200":
+          description: Expense voided
+        "403":
+          description: Employees forbidden from voiding expenses
+        "409":
+          description: Expense already voided
+
+  /api/v1/expenses/{expense_id}/receipt:
+    post:
+      summary: Upload expense receipt
+      tags: [Receipts]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Receipt uploaded
+        "409":
+          description: Cannot attach receipt to voided expense
+        "422":
+          description: File exceeds 5MB or invalid MIME magic bytes
+
+    get:
+      summary: Get presigned receipt download URL
+      tags: [Receipts]
+      responses:
+        "200":
+          description: Presigned download URL valid for 900 seconds
+        "404":
+          description: Receipt not found
+
+  /api/v1/financial-summary/expenses:
+    get:
+      summary: Expense totals by category and by month
+      tags: [Financial Summary]
+      parameters:
+        - in: query
+          name: from
+          required: true
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: to
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Summary aggregated by category and month (excluding VOID)
+        "422":
+          description: Period exceeds 366 days or invalid date range
+
+  /api/v1/financial-summary:
+    get:
+      summary: Top-level financial summary
+      tags: [Financial Summary]
+      responses:
+        "200":
+          description: Top-level totals
+
+  /internal/v1/customers/{customer_id}:
+    get:
+      summary: Internal customer fetch (Contract C1 for Invoice Service)
+      tags: [Internal]
+      security:
+        - ServiceToken: []
+      parameters:
+        - in: path
+          name: customer_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: business_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Customer snapshot for invoice issuance
+        "401":
+          description: Invalid service token
+        "403":
+          description: Caller not authorized
+        "404":
+          description: Customer not found
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ServiceToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CustomerCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        billing_address:
+          type: object
+        tax_id:
+          type: string
+
+    CustomerUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        billing_address:
+          type: object
+        tax_id:
+          type: string
+
+    ExpenseCreate:
+      type: object
+      required: [description, amount, currency, expense_date]
+      properties:
+        description:
+          type: string
+        amount:
+          type: string
+          example: "125.50"
+        currency:
+          type: string
+          example: "USD"
+        expense_date:
+          type: string
+          format: date
+        category_id:
+          type: string
+          format: uuid
+        supplier_id:
+          type: string
+          format: uuid
+
+    ExpensePatch:
+      type: object
+      properties:
+        description:
+          type: string
+        category_id:
+          type: string
+          format: uuid
+
+    ExpenseVoidRequest:
+      type: object
+      required: [void_reason]
+      properties:
+        void_reason:
+          type: string
