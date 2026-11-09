@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bizbrain.local/contracts/events/PaymentCaptured.v1.json",
+  "title": "PaymentCaptured",
+  "description": "Emitted by the Payment Service exactly once per payment, after PayPal confirms a capture. Delivered at-least-once through the outbox. The Invoice Service must process it idempotently by event_id (contract C3).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "event_version",
+    "occurred_at",
+    "request_id",
+    "business_id",
+    "payment_id",
+    "invoice_id",
+    "amount",
+    "currency",
+    "provider_capture_id"
+  ],
+  "properties": {
+    "event_id": {
+      "description": "Unique id of this event (the outbox row id). Lowercase canonical UUID. Used by the Invoice Service for deduplication.",
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "event_type": {
+      "type": "string",
+      "const": "PaymentCaptured"
+    },
+    "event_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "occurred_at": {
+      "description": "UTC time the capture was confirmed, RFC 3339 with a trailing Z, for example 2026-11-07T10:30:00Z.",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.[0-9]{1,6})?Z$",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "request_id": {
+      "description": "Trace id of the request that led to the capture.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "business_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "payment_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "invoice_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "amount": {
+      "description": "Decimal string, never a JSON number, no sign, no leading zeros, at most 4 decimal places. Format only: the consumer checks that it is greater than zero and not above the outstanding balance.",
+      "type": "string",
+      "maxLength": 24,
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,4})?$",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "currency": {
+      "description": "ISO 4217 alphabetic code, uppercase.",
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "not": {
+        "pattern": "\\s"
+      }
+    },
+    "provider_capture_id": {
+      "description": "PayPal capture id.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "not": {
+        "pattern": "\\s"
+      }
+    }
+  }
+}
