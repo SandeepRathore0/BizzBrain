@@ -1,0 +1,95 @@
+version: "3.8"
+
+services:
+  payment-db:
+    image: postgres:16-alpine
+    container_name: bizbrain_payment_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: payment_db
+      DB_MIGRATION_USER: payment_migrator
+      DB_MIGRATION_PASSWORD: migrator_secure_pass_123
+      DB_APP_USER: payment_app
+      DB_APP_PASSWORD: app_runtime_secure_pass_123
+    ports:
+      - "5432:5432"
+    volumes:
+      - payment_db_data:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d payment_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bizbrain_payment_service
+    restart: unless-stopped
+    depends_on:
+      payment-db:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - DATABASE_URL=postgresql+asyncpg://payment_app:app_runtime_secure_pass_123@payment-db:5432/payment_db
+      - MIGRATION_DATABASE_URL=postgresql+asyncpg://payment_migrator:migrator_secure_pass_123@payment-db:5432/payment_db
+      - PAYPAL_ENV=sandbox
+      - PAYPAL_CLIENT_ID=test_client_id
+      - PAYPAL_CLIENT_SECRET=test_client_secret
+      - PAYPAL_BASE_URL=http://fake-paypal:8080
+      - INVOICE_SERVICE_URL=http://invoice-stub:8002
+    volumes:
+      - .:/app
+
+  outbox-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bizbrain_payment_outbox_worker
+    restart: unless-stopped
+    command: ["python", "-m", "app.workers.outbox_worker"]
+    depends_on:
+      payment-db:
+        condition: service_healthy
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql+asyncpg://payment_app:app_runtime_secure_pass_123@payment-db:5432/payment_db
+      - INVOICE_SERVICE_URL=http://invoice-stub:8002
+      - OUTBOX_BATCH_SIZE=10
+      - OUTBOX_VISIBILITY_TIMEOUT_SECONDS=60
+      - OUTBOX_POLL_INTERVAL_WORK=0.5
+      - OUTBOX_POLL_INTERVAL_IDLE=2.0
+    volumes:
+      - .:/app
+
+  reconciliation-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bizbrain_payment_reconciliation_worker
+    restart: unless-stopped
+    command: ["python", "-m", "app.workers.reconciliation_worker"]
+    depends_on:
+      payment-db:
+        condition: service_healthy
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql+asyncpg://payment_app:app_runtime_secure_pass_123@payment-db:5432/payment_db
+      - PAYPAL_ENV=sandbox
+      - PAYPAL_BASE_URL=http://fake-paypal:8080
+      - RECON_INTERVAL_SECONDS=60
+      - RECON_BATCH_SIZE=50
+      - RECON_MIN_AGE_SECONDS=120
+      - RECON_NO_CAPTURE_WINDOW_SECONDS=900
+    volumes:
+      - .:/app
+
+volumes:
+  payment_db_data:
